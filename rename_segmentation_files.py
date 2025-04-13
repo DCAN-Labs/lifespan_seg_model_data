@@ -1,11 +1,5 @@
 # Python script to automate file renaming
 
-# First argument should be project root directory
-#   (e.g. /scratch.global/lundq163/lifespan-seg-model-data/raw/fragileX)
-#   (e.g. /scratch.global/lundq163/lifespan-seg-model-data/raw/NS)
-#   etc...
-# Second argument should be path to participants.tsv to get the ages
-
 import sys
 import os
 import csv
@@ -16,26 +10,41 @@ def main():
     script_name = sys.argv[0]
     arguments = sys.argv[1:]
 
-    if len(arguments) < 2:
-        print("\nThis script requires 2 arguments. Too few provided!\n\nExpecting:")
-        print("\tArg 1: path to project root directory")
-        print("\tArg 2: path to the 'participants.tsv' file to retrieve ages\n")
+    if len(arguments) < 7:
+        print("\nThis script requires 6 arguments. Too few provided!\n\nExpecting:")
+        print("\tArg 1: path to project root directory where the subject folders are located\n")
+        print("\tArg 2: relative path to the T1 and aseg files within each subject folder\n")
+        print("\tArg 3: dataset name to use in the renamed files (e.g. fragileX, NS, etc.)\n")
+        print("\tArg 4: absolute path to the 'participants.tsv' file to retrieve ages\n")
+        print("\tArg 5: unique identifier string for the T1 file\n")
+        print("\tArg 6: name of the aseg file to rename with extension\n")
+        print("\tArg 7: absolute path to the output directory where renamed files will be saved\n")
+        print(f"Usage: {script_name} <base_directory> <relative_path> <dataset_name> <participants_file> <t1_identifier> <aseg_identifier> <output_directory>")
         return
 
-    project_root_path = arguments[0]
-    project_name = os.path.basename(project_root_path)
+    base_directory = arguments[0]
+    relative_path = arguments[1]
+    if relative_path.startswith("/"):
+        relative_path = relative_path[1:]
+    if not relative_path.endswith("/"):
+        relative_path += "/" 
+    dataset_name = arguments[2]
+    participants_file = arguments[3]
+    t1_identifier = arguments[4]
+    aseg_identifier = arguments[5]
+    output_directory = arguments[6]
 
     # create new directory to store renamed files if it doesn't exist, within the parent directory of the project root
-    destination_directory_path = os.path.join(
-        os.path.dirname(project_root_path), f"labels_{project_name}_renamed"
-    )
-    if not os.path.exists(destination_directory_path):
-        os.makedirs(destination_directory_path)
-        print(f"Created directory: {destination_directory_path}")
+    t1_destination_directory_path = os.path.join(os.path.dirname(output_directory), f"images_{dataset_name}_renamed")
+    aseg_destination_directory_path = os.path.join(os.path.dirname(output_directory), f"labels_{dataset_name}_renamed")
+    
+    if not os.path.exists(t1_destination_directory_path) or not os.path.exists(aseg_destination_directory_path):
+        # Create the destination directory if it doesn't exist
+        os.makedirs(t1_destination_directory_path)
+        os.makedirs(aseg_destination_directory_path)
+        print(f"Created directories: {t1_destination_directory_path} and {aseg_destination_directory_path}")
     else:
-        print(f"Directory exists: {destination_directory_path}")
-
-    participants_file = arguments[1]
+        print(f"Directories exist: {t1_destination_directory_path} and {aseg_destination_directory_path}")
 
     # Check if the participants.tsv file exists
     if not os.path.isfile(participants_file):
@@ -63,13 +72,10 @@ def main():
         age = row[age_index]
         participant_ages[participant_id] = age
 
-    # Loop through the /project_root/derivatives/freesurfer directory and rename the files named T1.mgz and aseg.mgz to {sub_age_in_months}mo_ds-fragileX_sub-{sub_id}_0000.mgz and {sub_age_in_months}mo_ds-fragileX_sub-{sub_id}.mgz respectively
-    # Store the renamed files in the new directory created above
-    # Structure of the freesurfer directory is as follows: /project_root/derivatives/freesurfer/{sub_id}/mri/{T1.mgz, aseg.mgz}
-    freesurfer_directory = os.path.join(project_root_path, "derivatives", "freesurfer")
-    for sub_id in os.listdir(freesurfer_directory):
-        sub_directory = os.path.join(freesurfer_directory, sub_id, "mri")
-        if os.path.isdir(sub_directory):
+    
+    for sub_id in os.listdir(base_directory):
+        file_dir = os.path.join(base_directory, sub_id, relative_path)
+        if os.path.isdir(file_dir):
             # Get the age of the participant from the dictionary
             age = participant_ages.get(sub_id)
             if age is not None:
@@ -77,31 +83,24 @@ def main():
                 age_in_months = int(age) * 12
 
                 # Rename T1.mgz and aseg.mgz files
-                for file_name in os.listdir(sub_directory):
-                    file_extension = os.path.splitext(file_name)[
-                        1
-                    ]  # Extract the file extension
-                    if file_name.startswith("T1"):
-                        new_file_name = f"{age_in_months}mo_ds-fragileX_sub-{sub_id}_0000.{file_extension}"
-                        source_path = os.path.join(sub_directory, file_name)
-
-                        destination_path = os.path.join(
-                            destination_directory_path, new_file_name
-                        )
+                for file_name in os.listdir(file_dir):
+                    file_extension = os.path.splitext(file_name)[1]  # Extract the file extension
+                    
+                    if t1_identifier in file_name:
+                        new_file_name = f"{age_in_months}mo_ds-{dataset_name}_{sub_id}_0000{file_extension}"
+                        source_path = os.path.join(file_dir, file_name)
+                        destination_path = os.path.join(t1_destination_directory_path, new_file_name)
                         shutil.copyfile(source_path, destination_path)
-                        print(f"Copied and renamed {file_name} to {destination_path}")
-                    elif file_name.startswith("aseg"):
-                        new_file_name = f"{age_in_months}mo_ds-fragileX_sub-{sub_id}.{file_extension}"
-                        source_path = os.path.join(sub_directory, file_name)
-                        destination_path = os.path.join(
-                            destination_directory_path, new_file_name
-                        )
+                        print(f"Renamed {file_name} to {new_file_name} and copied to {destination_path}")
+                    elif file_name == aseg_identifier:
+                        new_file_name = f"{age_in_months}mo_ds-{dataset_name}_{sub_id}_{aseg_identifier}"
+                        source_path = os.path.join(file_dir, file_name)
+                        destination_path = os.path.join(aseg_destination_directory_path, new_file_name)
                         shutil.copyfile(source_path, destination_path)
-                        print(f"Copied and renamed {file_name} to {destination_path}")
+                        print(f"Renamed {file_name} to {new_file_name} and copied to {destination_path}")
             else:
                 print(f"Participant ID {sub_id} not found in the participants file.")
-
-    print("File renaming completed.")
+    print(f"File renaming completed. Script execution completed. T1s renamed and copied to {t1_destination_directory_path} and aseg files renamed and copied to {aseg_destination_directory_path}.")
 
 
 def read_tsv(file_path, delimiter="\t"):
@@ -113,8 +112,7 @@ def read_tsv(file_path, delimiter="\t"):
         delimiter (str, optional): The delimiter used in the TSV file. Defaults to tab ('\t').
 
     Returns:
-        list: A list of lists representing the TSV file content,
-              where each inner list is a row of the file.
+        list: A list of lists representing the TSV file content, where each inner list is a row of the file.
     """
     data = []
     with open(file_path, "r") as file:
