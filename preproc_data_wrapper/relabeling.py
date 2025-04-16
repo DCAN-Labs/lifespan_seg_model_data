@@ -11,7 +11,7 @@ def relabel_segmentation(input_file, output_file):
     # Define the valid labels based on your list
     valid_labels = {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 24, 26, 28, 30,
-        31, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 54, 58, 60, 62, 63, 77, 85, 172
+        31, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 54, 58, 60, 62, 63, 77, 80, 85, 172
     }
     
     print(f"Reading segmentation file: {input_file}")
