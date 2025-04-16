@@ -1,4 +1,4 @@
- #!/bin/bash 
+#!/bin/bash 
 
 set +x 
 # determine data directory, run folders, and run templates
@@ -6,7 +6,7 @@ dataset=$1
 in_bucket="s3://lifespan-seg-model-data/raw"
 out_bucket="s3://lifespan-seg-model-data/preprocessed/T1-only"
 data_dir="/tmp"
-run_folder="/users/1/lundq163/projects/lssm-data-preproc/preproc_data_wrapper"
+run_folder=`pwd`
 
 preproc_folder="${run_folder}/run_files_${dataset}.preproc_data"
 preproc_template="template.preproc_data"

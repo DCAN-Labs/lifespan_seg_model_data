@@ -22,14 +22,41 @@ if [ ! -d ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo ]; then
 	fi
 fi
 
-if [[ ${images_ext} == "mgz" ]]; then
-	module load freesurfer
-	mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz
+module load freesurfer
+module load fsl
+source /home/faird/shared/code/external/envs/miniconda3/load_miniconda3.sh
+
+if [ ${dataset} == "fragileX" ]; then
+	if [[ ${images_ext} == "mgz" ]]; then
+		mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz
+	fi
+	if [[ ${labels_ext} == "mgz" ]]; then
+		mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz
+	fi
+	fslswapdim ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz RL PA IS ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz
+	fslswapdim ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz RL PA IS ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz
 fi
 
-if [[ ${labels_ext} == "mgz" ]]; then
-	module load freesurfer
-	mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz
+if [ ${dataset} == "ADNI" ]; then
+	if [[ ${images_ext} == "mgz" ]]; then
+		mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.${images_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz
+	fi
+	if [[ ${labels_ext} == "mgz" ]]; then
+		mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.${labels_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz
+	fi
+	fslswapdim ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz LR PA IS ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz
+	fslswapdim ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz RL PA IS ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz
 fi
 
+if [ ${dataset} == "fragileX" ]; then
+	python ${run_folder}/relabeling_with_lut2.py ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz --output ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz
+fi
 
+if [ ${dataset} == "ADNI" ]; then
+	python ${run_folder}/relabeling_with_lut2.py ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz --output ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz
+fi
+
+cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
+cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
+cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
+cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/

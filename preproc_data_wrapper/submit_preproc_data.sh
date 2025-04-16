@@ -1,6 +1,7 @@
 #!/bin/bash -l
 
 array=$1
+dataset=$2
 
 if [ -z "$array" ]
 
@@ -17,9 +18,9 @@ else
       echo "Submitting the following jobs for move_subjects processing now: $array"
       echo ""
 
-      abcd=$(sg rando149 -c "sbatch --parsable -a ${array} resources_move_subjects.sh")
+      preproc=$(sbatch --parsable -a ${array} resources_preproc_data.sh ${dataset})
 
-      echo "move_subjects JOB ID: $abcd"
+      echo "data preproc JOB ID: $preproc"
 
       echo ""
       echo "Output logs will appear in output_logs folder. Use 'squeue -al --me' to monitor jobs."
