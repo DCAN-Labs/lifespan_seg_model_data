@@ -1,16 +1,17 @@
 #!/bin/bash -l
+
 #SBATCH -J preproc_data
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=12gb
-#SBATCH --tmp=200gb
-#SBATCH -t 30:00
+#SBATCH --mem=2gb
+#SBATCH --tmp=20gb
+#SBATCH -t 10:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lundq163@umn.edu
 #SBATCH -p aglarge,agsmall,ag2tb,preempt,amdsmall,amdlarge,amd512,amd2tb
-#SBATCH -o output_logs/test1_%A_%a.out
-#SBATCH -e output_logs/test1_%A_%a.err
+#SBATCH -o fragileX_output_logs/data_preproc_%A_%a.out
+#SBATCH -e fragileX_output_logs/data_preproc_%A_%a.err
 #SBATCH -A csandova
 
 cd run_files_${1}.preproc_data

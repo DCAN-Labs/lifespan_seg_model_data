@@ -144,7 +144,7 @@ def create_color_lut(labels_with_rgb, output_file):
         f.write("# Label Name R G B A\n")
         
         # Add background
-        f.write("0 Background 0 0 0 0\n")
+        #f.write("0 Background 0 0 0 0\n")
         
         # Add all other labels
         for label, rgb in labels_with_rgb.items():
