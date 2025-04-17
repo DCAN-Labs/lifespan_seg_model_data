@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import argparse
+import random
 from pathlib import Path
 
 def relabel_segmentation(input_file, output_file):
@@ -29,6 +30,9 @@ def relabel_segmentation(input_file, output_file):
     invalid_labels = [label for label in unique_labels if label not in valid_labels]
     print(f"Found {len(invalid_labels)} labels to remap")
     
+    random_int = random.randint(3, 4)
+    print(f"Random integer for CC labels: {random_int}")
+    
     # Process each invalid label
     for label in invalid_labels:
         if label == 0:  # Skip background
@@ -41,6 +45,16 @@ def relabel_segmentation(input_file, output_file):
         elif label >= 2000:
             new_label = 42  # Right cortex
             print(f"Remapping label {label} → {new_label} (Right cortex)")
+        elif label in {251,252,253,254,255}:
+            # set a random seed, if that seed is even then use 2, otherwise use 41
+            new_label = 2 if random_int % 2 == 0 else 41
+            print(f"Remapping label {label} → {new_label} (Randomly assigned all CC labels to L/R WM)")
+        elif label == 72:
+            new_label = 0
+            print(f"Remapping label {label} → {new_label} (Unused label)")
+        elif label == 29:
+            new_label = 0
+            print(f"Remapping label {label} → {new_label} (Unused label)")
         else:
             # For other unlisted subcortical labels, we could either:
             # 1. Keep them as is
