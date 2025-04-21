@@ -35,9 +35,7 @@ def relabel_segmentation(input_file, output_file):
     
     # Process each invalid label
     for label in invalid_labels:
-        if label == 0:  # Skip background
-            continue
-        
+        print(f"Processing label: {label}")
         # Determine new label based on range
         if label >= 1000 and label < 2000:
             new_label = 3  # Left cortex

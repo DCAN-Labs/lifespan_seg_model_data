@@ -117,7 +117,7 @@ def main():
 
                 # Rename T1.mgz and aseg.mgz files
                 for file_name in os.listdir(file_dir):
-                    file_extension = os.path.splitext(file_name)[1]  # Extract the file extension
+                    file_extension = file_name[file_name.find("."):]
                     
                     if t1_identifier in file_name:
                         if session_id and ("-" in session_id or "_" in session_id or "/" in session_id):
