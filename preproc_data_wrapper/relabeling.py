@@ -5,53 +5,31 @@ import numpy as np
 import argparse
 import random
 from pathlib import Path
-import tempfile
-import statistics
 
 def correct_corpus_callosum(fdata):
-    shape = fdata.shape
-    y_z_to_min_max_x = dict()
-    x_len = shape[0]
-    y_len = shape[1]
-    z_len = shape[2]
-    # old labels: CC_Posterior, CC_Mid_Posterior, CC_Central, CC_Mid_Anterior, CC_Anterior
-    corpus_callosum_labels = [251,252,253,254,255]
-    for x in range(x_len):
-        for y in range(y_len):
-            for z in range(z_len):
-                label = int(fdata[x][y][z])
-                if label in corpus_callosum_labels:
-                    if (y, z) not in y_z_to_min_max_x:
-                        y_z_to_min_max_x[(y, z)] = [x, x]
-                    else:
-                        new_min_max = y_z_to_min_max_x[(y, z)]
-                        if x < new_min_max[0]:
-                            new_min_max[0] = x
-                        if x > new_min_max[1]:
-                            new_min_max[1] = x
-                        y_z_to_min_max_x[(y, z)] = new_min_max
-    mean_x = np.zeros((y_len, z_len))
-    for y in range(y_len):
-        for z in range(z_len):
-            if (y, z) in y_z_to_min_max_x:
-                mean_x[y][z] = statistics.mean([y_z_to_min_max_x[(y, z)][0], y_z_to_min_max_x[(y, z)][1]])
-    left_cerebral_white_matter_label = 2
-    right_cerebral_white_matter_label = 41
-    for x in range(x_len):
-        for y in range(y_len):
-            for z in range(z_len):
-                label = int(fdata[x][y][z])
-                if label in corpus_callosum_labels:
-                    m = int(mean_x[y][z])
-                    if x == m:
-                        # Flip a coin
-                        new_label = left_cerebral_white_matter_label if random.randint(0, 1) % 2 == 0 else right_cerebral_white_matter_label
-                    elif x >= m:
-                        new_label = left_cerebral_white_matter_label
-                    else:
-                        new_label = right_cerebral_white_matter_label
-                    fdata[x][y][z] = new_label
-                    print(f"Remapping label {label} to {new_label} (Assigned all CC labels to L/R WM)")
+    # Identify CC voxels in a single pass
+    cc_mask = np.isin(fdata, [251, 252, 253, 254, 255])
+    cc_indices = np.where(cc_mask)
+    
+    # Calculate means more efficiently
+    y_z_pairs = set(zip(cc_indices[1], cc_indices[2]))
+    y_z_to_mean_x = {}
+    
+    for y, z in y_z_pairs:
+        x_values = cc_indices[0][np.logical_and(cc_indices[1] == y, cc_indices[2] == z)]
+        y_z_to_mean_x[(y, z)] = np.mean(x_values)
+    
+    # Apply the new labels
+    for x, y, z in zip(*cc_indices):
+        m = int(y_z_to_mean_x[(y, z)])
+        if x == m:
+            new_label = 2 if random.randint(0, 1) == 0 else 41
+        elif x >= m:
+            new_label = 2  # Left cerebral white matter
+        else:
+            new_label = 41  # Right cerebral white matter
+        fdata[x, y, z] = new_label
+    
     return fdata
 
 def relabel_segmentation(input_file, output_file):
