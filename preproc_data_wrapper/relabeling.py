@@ -2,11 +2,57 @@
 
 import nibabel as nib
 import numpy as np
-import os
-import sys
 import argparse
 import random
 from pathlib import Path
+import tempfile
+import statistics
+
+def correct_corpus_callosum(fdata):
+    shape = fdata.shape
+    y_z_to_min_max_x = dict()
+    x_len = shape[0]
+    y_len = shape[1]
+    z_len = shape[2]
+    # old labels: CC_Posterior, CC_Mid_Posterior, CC_Central, CC_Mid_Anterior, CC_Anterior
+    corpus_callosum_labels = [251,252,253,254,255]
+    for x in range(x_len):
+        for y in range(y_len):
+            for z in range(z_len):
+                label = int(fdata[x][y][z])
+                if label in corpus_callosum_labels:
+                    if (y, z) not in y_z_to_min_max_x:
+                        y_z_to_min_max_x[(y, z)] = [x, x]
+                    else:
+                        new_min_max = y_z_to_min_max_x[(y, z)]
+                        if x < new_min_max[0]:
+                            new_min_max[0] = x
+                        if x > new_min_max[1]:
+                            new_min_max[1] = x
+                        y_z_to_min_max_x[(y, z)] = new_min_max
+    mean_x = np.zeros((y_len, z_len))
+    for y in range(y_len):
+        for z in range(z_len):
+            if (y, z) in y_z_to_min_max_x:
+                mean_x[y][z] = statistics.mean([y_z_to_min_max_x[(y, z)][0], y_z_to_min_max_x[(y, z)][1]])
+    left_cerebral_white_matter_label = 2
+    right_cerebral_white_matter_label = 41
+    for x in range(x_len):
+        for y in range(y_len):
+            for z in range(z_len):
+                label = int(fdata[x][y][z])
+                if label in corpus_callosum_labels:
+                    m = int(mean_x[y][z])
+                    if x == m:
+                        # Flip a coin
+                        new_label = left_cerebral_white_matter_label if random.randint(0, 1) % 2 == 0 else right_cerebral_white_matter_label
+                    elif x >= m:
+                        new_label = left_cerebral_white_matter_label
+                    else:
+                        new_label = right_cerebral_white_matter_label
+                    fdata[x][y][z] = new_label
+                    print(f"Remapping label {label} to {new_label} (Assigned all CC labels to L/R WM)")
+    return fdata
 
 def relabel_segmentation(input_file, output_file):
     # Define the valid labels based on your list
@@ -21,17 +67,17 @@ def relabel_segmentation(input_file, output_file):
     
     # Make a copy of the data for modification
     new_data = data.copy()
+
+    # First correct corpus callosum
+    new_data = correct_corpus_callosum(new_data)
     
     # Get unique labels
-    unique_labels = np.unique(data).astype(int)
+    unique_labels = np.unique(new_data).astype(int)
     print(f"Found {len(unique_labels)} unique labels")
     
     # Identify labels not in our valid list
     invalid_labels = [label for label in unique_labels if label not in valid_labels]
     print(f"Found {len(invalid_labels)} labels to remap")
-    
-    random_int = random.randint(3, 4)
-    print(f"Random integer for CC labels: {random_int}")
     
     # Process each invalid label
     for label in invalid_labels:
@@ -44,9 +90,8 @@ def relabel_segmentation(input_file, output_file):
             new_label = 42  # Right cortex
             print(f"Remapping label {label} → {new_label} (Right cortex)")
         elif label in {251,252,253,254,255}:
-            # set a random seed, if that seed is even then use 2, otherwise use 41
-            new_label = 2 if random_int % 2 == 0 else 41
-            print(f"Remapping label {label} → {new_label} (Randomly assigned all CC labels to L/R WM)")
+            # CC_Posterior, CC_Mid_Posterior, CC_Central, CC_Mid_Anterior, CC_Anterior
+            assert False, 'Should have been handled by correct_corpus_callosum.'
         elif label == 72:
             new_label = 0
             print(f"Remapping label {label} → {new_label} (Unused label)")
