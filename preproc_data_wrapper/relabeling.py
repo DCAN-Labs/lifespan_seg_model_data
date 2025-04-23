@@ -2,11 +2,35 @@
 
 import nibabel as nib
 import numpy as np
-import os
-import sys
 import argparse
 import random
 from pathlib import Path
+
+def correct_corpus_callosum(fdata):
+    # Identify CC voxels in a single pass
+    cc_mask = np.isin(fdata, [251, 252, 253, 254, 255])
+    cc_indices = np.where(cc_mask)
+    
+    # Calculate means more efficiently
+    y_z_pairs = set(zip(cc_indices[1], cc_indices[2]))
+    y_z_to_mean_x = {}
+    
+    for y, z in y_z_pairs:
+        x_values = cc_indices[0][np.logical_and(cc_indices[1] == y, cc_indices[2] == z)]
+        y_z_to_mean_x[(y, z)] = np.mean(x_values)
+    
+    # Apply the new labels
+    for x, y, z in zip(*cc_indices):
+        m = int(y_z_to_mean_x[(y, z)])
+        if x == m:
+            new_label = 2 if random.randint(0, 1) == 0 else 41
+        elif x >= m:
+            new_label = 2  # Left cerebral white matter
+        else:
+            new_label = 41  # Right cerebral white matter
+        fdata[x, y, z] = new_label
+    
+    return fdata
 
 def relabel_segmentation(input_file, output_file):
     # Define the valid labels based on your list
@@ -21,17 +45,17 @@ def relabel_segmentation(input_file, output_file):
     
     # Make a copy of the data for modification
     new_data = data.copy()
+
+    # First correct corpus callosum
+    new_data = correct_corpus_callosum(new_data)
     
     # Get unique labels
-    unique_labels = np.unique(data).astype(int)
+    unique_labels = np.unique(new_data).astype(int)
     print(f"Found {len(unique_labels)} unique labels")
     
     # Identify labels not in our valid list
     invalid_labels = [label for label in unique_labels if label not in valid_labels]
     print(f"Found {len(invalid_labels)} labels to remap")
-    
-    random_int = random.randint(3, 4)
-    print(f"Random integer for CC labels: {random_int}")
     
     # Process each invalid label
     for label in invalid_labels:
@@ -44,9 +68,8 @@ def relabel_segmentation(input_file, output_file):
             new_label = 42  # Right cortex
             print(f"Remapping label {label} → {new_label} (Right cortex)")
         elif label in {251,252,253,254,255}:
-            # set a random seed, if that seed is even then use 2, otherwise use 41
-            new_label = 2 if random_int % 2 == 0 else 41
-            print(f"Remapping label {label} → {new_label} (Randomly assigned all CC labels to L/R WM)")
+            # CC_Posterior, CC_Mid_Posterior, CC_Central, CC_Mid_Anterior, CC_Anterior
+            assert False, 'Should have been handled by correct_corpus_callosum.'
         elif label == 72:
             new_label = 0
             print(f"Remapping label {label} → {new_label} (Unused label)")
