@@ -24,6 +24,7 @@ fi
 
 module load freesurfer
 module load fsl
+module load ants
 source /home/faird/shared/code/external/envs/miniconda3/load_miniconda3.sh
 
 if [ ${dataset} == "fragileX" ]; then
@@ -50,10 +51,16 @@ fi
 
 if [ ${dataset} == "fragileX" ]; then
 	python ${run_folder}/relabeling.py ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz --output ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz
+	antsApplyTransforms -d 3 -i ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -r ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz -o ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -n NearestNeighbor
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -odt int
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz -odt int
 fi
 
 if [ ${dataset} == "ADNI" ]; then
 	python ${run_folder}/relabeling.py ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz --output ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz
+	antsApplyTransforms -d 3 -i ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -r ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz -o ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -n NearestNeighbor
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -odt int
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz -odt int
 fi
 
 if [ -e ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz ]; then
