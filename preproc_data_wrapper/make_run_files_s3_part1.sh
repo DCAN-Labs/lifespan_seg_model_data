@@ -3,12 +3,12 @@
 # determine data directory, run folders, and run templates
 dataset=$1
 in_bucket="s3://lifespan-seg-model-data/raw"
-out_bucket="s3://lifespan-seg-model-data/preprocessed/T1-only"
+out_bucket="s3://lifespan-seg-model-data/raw"
 data_dir="/tmp"
 run_folder=`pwd`
 
-preproc_folder="${run_folder}/run_files_${dataset}.preproc_data"
-preproc_template="template.preproc_data"
+preproc_folder="${run_folder}/run_files_${dataset}.preproc_data_part1"
+preproc_template="template.preproc_data_part1"
 
 # if processing run folders exist delete them and recreate
 if [ -d "${preproc_folder}" ]; then

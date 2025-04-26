@@ -10,11 +10,11 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lundq163@umn.edu
 #SBATCH -p aglarge,agsmall,ag2tb,preempt,amdsmall,amdlarge,amd512,amd2tb
-#SBATCH -o fragileX_output_logs/data_preproc_%A_%a.out
-#SBATCH -e fragileX_output_logs/data_preproc_%A_%a.err
+#SBATCH -o fragileX_output_logs_part1/data_preproc_%A_%a.out
+#SBATCH -e fragileX_output_logs_part1/data_preproc_%A_%a.err
 #SBATCH -A csandova
 
-cd run_files_${1}.preproc_data
+cd run_files_${1}.preproc_data_part1
 
 module load singularity
 
