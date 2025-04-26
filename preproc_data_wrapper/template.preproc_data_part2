@@ -1,0 +1,55 @@
+#!/bin/bash 
+
+sub_id=SUBJECTID
+age=AGEMO
+ses_id=SESID
+labels_ext=LABELSEXT
+images_ext=IMAGESEXT
+dataset=DATASET
+in_bucket=INBUCKET
+out_bucket=OUTBUCKET
+data_dir=DATADIR
+run_folder=RUNDIR
+
+if [ ! -d ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo ]; then
+	mkdir -pv ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo
+	if [ ${ses_id} == "None" ]; then
+		s3cmd get --recursive -v ${in_bucket}/images_${dataset}_renamed_relabeled/${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/
+		s3cmd get --recursive -v ${in_bucket}/labels_${dataset}_renamed_relabeled/${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/
+	else
+		s3cmd get --recursive -v ${in_bucket}/images_${dataset}_renamed_relabeled/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.${images_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/
+		s3cmd get --recursive -v ${in_bucket}/labels_${dataset}_renamed_relabeled/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.${labels_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/
+	fi
+fi
+
+module load fsl
+module load ants
+
+if [ ${dataset} == "fragileX" ]; then
+	antsApplyTransforms -d 3 -i ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -r ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz -o ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -n NearestNeighbor
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz -odt int
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz -odt int
+fi
+
+if [ ${dataset} == "ADNI" ]; then
+	antsApplyTransforms -d 3 -i ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -r ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz -o ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -n NearestNeighbor
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz -odt int
+	fslmaths ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz -mul 1 ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz -odt int
+fi
+
+if [ -e ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz ]; then
+	s3cmd sync -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz ${out_bucket}/images/
+else
+	s3cmd sync -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz ${out_bucket}/images/
+fi
+
+if [ -e ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz ]; then
+	s3cmd sync -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz ${out_bucket}/labels/
+else
+	s3cmd sync -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz ${out_bucket}/labels/
+fi
+
+# cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}_0000.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
+# cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
+# cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
+# cp -v ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}.nii.gz ~/projects/lifespan_seg_model_data/preproc_data_wrapper/
