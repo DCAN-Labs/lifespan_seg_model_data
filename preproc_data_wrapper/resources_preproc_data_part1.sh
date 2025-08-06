@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH -J preproc_data
+#SBATCH -J part1_preproc_data
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=1
@@ -21,5 +21,3 @@ module load singularity
 file=run${SLURM_ARRAY_TASK_ID}
 
 bash ${file}
-
-# mesabi partitions for -p are amdsmall,amd512,amd2tb,ram256g,ram1t
