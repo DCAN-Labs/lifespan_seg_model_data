@@ -32,6 +32,9 @@ def correct_corpus_callosum(fdata):
     
     return fdata
 
+# WM-hypointensities (77) and non-WM-hypointensities (80) need to be remapped based on whatever side of the brain it is on, similar to corpus callosum function above
+
+
 def relabel_segmentation(input_file, output_file):
     # Define the valid labels based on your list
     # valid_labels_extended = {
@@ -73,12 +76,33 @@ def relabel_segmentation(input_file, output_file):
         elif label in {251,252,253,254,255}:
             # CC_Posterior, CC_Mid_Posterior, CC_Central, CC_Mid_Anterior, CC_Anterior
             assert False, 'Should have been handled by correct_corpus_callosum.'
-        elif label == 72:
+        elif label == 72:  # 5th ventricle
             new_label = 0
-            print(f"Remapping label {label} → {new_label} (Unused label)")
-        elif label == 29:
+            print(f"Remapping label (5th ventricle) {label} → {new_label} (Unused label)")
+        elif label == 29: #  Left-undetermined
             new_label = 0
-            print(f"Remapping label {label} → {new_label} (Unused label)")
+            print(f"Remapping label (Left-undetermined) {label} → {new_label} (Unused label)")
+        elif label == 1:  # Left-Cerebral-Exterior
+            new_label = 0
+            print(f"Remapping label (Left-Cerebral-Exterior) {label} → {new_label} (Unused label)")
+        elif label == 5:  # Left-Inf-Lat-Vent
+            new_label = 4  # Left-Lateral-Ventricle
+            print(f"Remapping label (Left-Inf-Lat-Vent) {label} → {new_label} (Left-Lateral-Ventricle)")
+        elif label == 44:  # Right-Inf-Lat-Vent
+            new_label = 43  # Right-Lateral-Ventricle
+            print(f"Remapping label (Right-Inf-Lat-Vent) {label} → {new_label} (Right-Lateral-Ventricle)")
+        elif label == 31:  # Left-choroid-plexus
+            new_label = 4  # Left-Lateral-Ventricle
+            print(f"Remapping label (Left-choroid-plexus) {label} → {new_label} (Left-Lateral-Ventricle)")
+        elif label == 63:  # Right-choroid-plexus
+            new_label = 43  # Right-Lateral-Ventricle
+            print(f"Remapping label (Right-choroid-plexus) {label} → {new_label} (Right-Lateral-Ventricle)")
+        elif label == 6 or label == 7:  # Left-Cerebellum-Exterior or Left-Cerebellum-White-Matter
+            new_label = 8  # Left-Cerebellum-Cortex
+            print(f"Remapping label (Left-Cerebellum-Exterior/Left-Cerebellum-White-Matter) {label} → {new_label} (Left-Cerebellum-Cortex)")
+        elif label == 45 or label == 46:  # Right-Cerebellum-Exterior or Right-Cerebellum-White-Matter
+            new_label = 47  # Right-Cerebellum-Cortex
+            print(f"Remapping label (Right-Cerebellum-Exterior/Right-Cerebellum-White-Matter) {label} → {new_label} (Right-Cerebellum-Cortex)")
         else:
             # For other unlisted subcortical labels, we could either:
             # 1. Keep them as is
@@ -87,6 +111,11 @@ def relabel_segmentation(input_file, output_file):
             print(f"Leaving unlisted subcortical label {label} as is")
             continue
         
+        # Left-vessel (30), Right-vessel (62) (CSF)
+        # 5th-Ventricle (72) (CSF or 3rd-Ventricle (14))
+        # WM-hypointensities (77) and non-WM-hypointensities (80) - see above
+        # Optic-Chiasm (85) - likely to 0
+
         # Apply the new label
         new_data[data == label] = new_label
         
