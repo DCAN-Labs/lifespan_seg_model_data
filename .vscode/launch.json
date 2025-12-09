@@ -12,13 +12,13 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "/scratch.global/nazar077/derivatives/freesurfer/",
-                "", 
-                "NS", 
-                "/scratch.global/lundq163/lifespan-seg-model-data/raw/participants.tsv",
-                "T1w",
-                "aseg.gz",
-                "/scratch.global/lundq163/lifespan-seg-model-data/raw/"
+                "/scratch.global/lundq163/primeneuro_segs/incoming_segs/",
+                "{session}/", 
+                "HBCD", 
+                "/users/1/lundq163/projects/lifespan_seg_model_data/bibsnet_segs_participants.tsv",
+                "0000.nii.gz",
+                "null_identifier",
+                "/scratch.global/lundq163/output_test/"
             ]
         }
     ]

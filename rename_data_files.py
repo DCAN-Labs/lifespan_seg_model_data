@@ -17,9 +17,10 @@ def main():
         print("\tArg 3: dataset name to use in the renamed files (e.g. fragileX, NS, etc.)\n")
         print("\tArg 4: absolute path to the 'participants.tsv' file to retrieve ages (req) and session ids (opt)\n")
         print("\tArg 5: unique identifier string for the T1 file\n")
-        print("\tArg 6: name of the aseg file to rename with extension\n")
-        print("\tArg 7: absolute path to the output directory where renamed files will be saved\n")
-        print(f"Usage: {script_name} <base_directory> <relative_path_template> <dataset_name> <participants_file> <t1_identifier> <aseg_identifier> <output_directory>")
+        print("\tArg 6: unique identifier string for the T2 file\n")
+        print("\tArg 7: name of the aseg file to rename with extension\n")
+        print("\tArg 8: absolute path to the output directory where renamed files will be saved\n")
+        print(f"Usage: {script_name} <base_directory> <relative_path_template> <dataset_name> <participants_file> <t1_identifier> <t2_identifier> <aseg_identifier> <output_directory>")
         return
 
     base_directory = arguments[0]
@@ -33,8 +34,9 @@ def main():
     dataset_name = arguments[2]
     participants_file = arguments[3]
     t1_identifier = arguments[4]
-    aseg_identifier = arguments[5]
-    output_directory = arguments[6]
+    t2_identifier = arguments[5]
+    aseg_identifier = arguments[6]
+    output_directory = arguments[7]
 
     # create new directory to store renamed files if it doesn't exist, within the parent directory of the project root
     t1_destination_directory_path = os.path.join(os.path.dirname(output_directory), f"images_{dataset_name}_renamed")
@@ -64,7 +66,7 @@ def main():
     header = participants_df[0]
     try:
         participant_id_index = header.index("participant_id")
-        age_index = header.index("age")
+        age_index = header.index("age") if "age" in header else header.index("age_in_months")
         session_id_index = header.index("session_id") if "session_id" in header else None
         if session_id_index is None:
             print("Warning: No 'session_id' or 'session' column found in the TSV file. Using default paths.")
@@ -84,10 +86,16 @@ def main():
             session_id = row[session_id_index]
         if participant_id not in participant_info:
             participant_info[participant_id] = []
-        participant_info[participant_id].append({
+        if header[age_index] == "age_in_months":
+            participant_info[participant_id].append({
+            "age_in_months": age,
+            "session_id": session_id
+            })
+        else:
+            participant_info[participant_id].append({
             "age": age,
             "session_id": session_id
-        })
+            })
 
     for sub_id in os.listdir(base_directory):
         if not os.path.isdir(os.path.join(base_directory, sub_id)):
@@ -95,14 +103,20 @@ def main():
         
         if sub_id in participant_info:
             for session_data in participant_info[sub_id]:
-                age = session_data["age"]
-                session_id = session_data["session_id"]
                 
-                if not age:
+                if session_data["session_id"]:
+                    session_id = session_data["session_id"]
+                else:
+                    session_id = None
+                
+                if "age" in session_data:
+                    age = session_data["age"]
+                    age_in_months = int(age) * 12
+                elif "age_in_months" in session_data:
+                    age_in_months = session_data["age_in_months"]
+                else:
                     print(f"Warning: No age found for participant {sub_id}, session {session_id}. Skipping.")
                     continue
-                
-                age_in_months = int(age) * 12
                 
                 if session_id and "{session}" in relative_path_template:
                     relative_path = relative_path_template.replace("{session}", session_id)
@@ -145,7 +159,33 @@ def main():
                         destination_path = os.path.join(t1_destination_directory_path, new_file_name)
                         shutil.copyfile(source_path, destination_path)
                         print(f"Renamed {file_name} to {new_file_name} and copied to {destination_path}")
-                    elif file_name == aseg_identifier:
+                    elif t2_identifier in file_name:
+                        if session_id and ("-" in session_id or "_" in session_id or "/" in session_id):
+                            parts = session_id.split("ses-", 1)
+                            if len(parts) > 1:
+                                session_id_clean = f"ses-{parts[1].replace('-', '').replace('_', '').replace('/', '')}"
+                            else:
+                                session_id_clean = session_id.replace("-", "").replace("_", "").replace("/", "")
+                        if sub_id and ("-" in sub_id or "_" in sub_id or "/" in sub_id):
+                            parts = sub_id.split("sub-", 1)
+                            if len(parts) > 1:
+                                sub_id_clean = f"sub-{parts[1].replace('-', '').replace('_', '').replace('/', '')}"
+                            else:
+                                sub_id_clean = sub_id.replace("-", "").replace("_", "").replace("/", "")    
+                        if session_id and "ses-" in session_id_clean:
+                            session_suffix = f"_{session_id_clean}" if session_id else ""
+                        else:
+                            session_suffix = f"_ses-{session_id_clean}" if session_id else ""
+                        if not "sub-" in sub_id_clean:
+                            sub_id_bids = "sub-" + sub_id_clean
+                        else:
+                            sub_id_bids = sub_id_clean
+                        new_file_name = f"{age_in_months}mo_ds-{dataset_name}_{sub_id_bids}{session_suffix}_0001{file_extension}"
+                        source_path = os.path.join(file_dir, file_name)
+                        destination_path = os.path.join(t1_destination_directory_path, new_file_name)
+                        shutil.copyfile(source_path, destination_path)
+                        print(f"Renamed {file_name} to {new_file_name} and copied to {destination_path}")
+                    elif aseg_identifier in file_name:
                         if session_id and ("-" in session_id or "_" in session_id or "/" in session_id):
                             parts = session_id.split("ses-", 1)
                             if len(parts) > 1:
@@ -173,7 +213,7 @@ def main():
                         print(f"Renamed {file_name} to {new_file_name} and copied to {destination_path}")
         else:
             print(f"Participant ID {sub_id} not found in the participants file.")
-    print(f"File renaming completed. Script execution completed. T1s renamed and copied to {t1_destination_directory_path} and aseg files renamed and copied to {aseg_destination_directory_path}.")
+    print(f"File renaming completed. Script execution completed. T1/T2s renamed and copied to {t1_destination_directory_path} and aseg files renamed and copied to {aseg_destination_directory_path}.")
 
 
 def read_tsv(file_path, delimiter="\t"):
