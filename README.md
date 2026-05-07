@@ -1,10 +1,12 @@
 # How to run the internal preprocessing for the data used in the lifespan segmentation model
 ## Notes before starting
 - Only set up for T1_only model training at the moment
-- For now, curated specifically for the ADNI and fragileX datasets
+- For now, curated specifically for the ADNI and fragileX datasets (NS in progress -> 5-7-2026)
 - The wrapper is split into two separate parts because the MSI modules for freesurfer and ants have conflicts
 ## Step 1a - Rename any files if necessary
 T1w image files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext}` while the corresponding label files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext}` before feeding them in to the preprocessing wrapper. In order to get files into this format, we need to run the `rename_data_files.py` script on a BIDS valid input directory. A specific file is used below as an example when filling in the arguments to the script, but this script can work on all files within a set of subjects as long as a `participants.tsv` is utilized.
+
+NOTE: this step may not be necessary as the renamed data may already exist on the s3 bucket under s3://lifespan-seg-model-data/{images/labels}_{dataset}_renamed. If that is the case then skip to Step 1b.
 
 Information on the file name fields:
 - `${age}` -> Integer value for the participant age in months. This information can be located in the participants.tsv for a given dataset, assuming it is BIDS valid. 
@@ -30,9 +32,9 @@ sub-1234    ses-1234    12
 - `<output_directory>` would be the absolute path to where the renamed files will get produced. For our example, the input to this argument would be `/usr/projects/bids_dataset_renamed`, and after running the script, the full path of the renamed file will result in `/usr/projects/bids_dataset_renamed/images_test_renamed/144mo_ds-test_sub-1234_ses-1234_0000.mgz`
 
 ## Step 1b - Running part 1 of data preprocessing
-Part 1 of data preprocessing includes converting anatomical images and label files to `.nii.gz` if needed, reorienting and overwriting the image and label file, then relabeling the segmentations using `./preproc_data_wrapper/relabeling.py`. Note that these preprocessing steps are currently only catered for the ADNI and fragileX datasets. 
-1. Within the `preproc_data_wrapper` folder, edit the following variables in the `make_run_files_s3_part1.sh` file if needed: `in_bucket` and `out_bucket`. These likely wont need to be edited though, as the variables are typically just `"s3://lifespan-seg-model-data/raw"` for both. 
-2. Execute the `make_run_files_s3_part1.sh` script. This will require one argument identifying the dataset name. So based on our example above, the command will look something like `./preproc_data_wrapper/make_run_files_s3_part1.sh test`. This will then make a unique run file based on the template `template.preproc_data_part1` for whatever file is available within `${in_bucket}/labels_${dataset}_renamed/`, and the run files will then be stored in a folder called `./preproc_data_wrapper/run_files_test.preproc_data_part1`. 
+Part 1 of data preprocessing includes converting anatomical images and label files to `.nii.gz` if needed, reorienting and overwriting the image and label file, then relabeling the segmentations using `./preproc_data_wrapper/relabeling.py`. Note that these preprocessing steps are currently only catered for the ADNI and fragileX datasets (NS in progress -> 5-7-2026). 
+1. `cd` into the `preproc_data_wrapper` folder, edit the following variables in the `make_run_files_s3_part1.sh` file if needed: `in_bucket` and `out_bucket`. These likely wont need to be edited though, as the variables are typically just `"s3://lifespan-seg-model-data/raw"` for both. 
+2. Execute the `make_run_files_s3_part1.sh` script. This will require one argument identifying the dataset name. So based on our example above, the command will look something like `./make_run_files_s3_part1.sh test`. This will then make a unique run file based on the template `template.preproc_data_part1` for whatever file is available within `${in_bucket}/labels_${dataset}_renamed/`, and the run files will then be stored in a folder called `./run_files_test.preproc_data_part1`. 
 3. Check the `./preproc_data_wrapper/resources_preproc_data_part1.sh` to make sure parameters are properly specified. Parameters that may need editing in particular are `--mail-user`, `-p`, `-o`, `-e`, and `-A`.
 4. Submit the jobs with the following command: `./preproc_data_wrapper/submit_preproc_data_part1.sh 0-10 test`. The two additional arguments are an example array and example name for the dataset. The final outputs from our example will be here: `${out_bucket}/images_test_renamed_relabeled/` and `${out_bucket}/labels_test_renamed_relabeled/`
 

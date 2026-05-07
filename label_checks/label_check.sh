@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /home/faird/shared/code/external/envs/miniconda3/load_miniconda3.sh
+source /projects/standard/faird/shared/code/external/envs/miniconda3/load_miniconda3.sh
 
 # Check if directory argument was provided
 if [ -z "$1" ]; then
@@ -11,8 +11,17 @@ fi
 
 INPUT_DIR="$1"
 
-# Create a file with your custom lookup table labels
-echo "0 1 2 3 4 5 6 7 8 10 11 12 13 14 15 16 17 18 24 26 28 30 31 41 42 43 44 46 47 49 50 51 52 53 54 58 60 62 63 77 85 172" > dcan_lookup_labels.txt
+# Create a file with your custom lookup table labels 
+
+#stable - this one is missing 40?
+#echo "0 1 2 3 4 5 6 7 8 10 11 12 13 14 15 16 17 18 24 26 28 30 31 41 42 43 44 46 47 49 50 51 52 53 54 58 60 62 63 77 85 172" > dcan_lookup_labels.txt
+
+#current infant maybe
+#echo "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 23 24 25 26 27 28 30 31 40 41 42 43 44 46 47 48 49 50 51 52 53 54 58 59 60 62 63 77 85 172" > dcan_lookup_labels.txt
+
+#lifespan, removed 77 and 80 for now
+echo "0 1 2 3 4 5 6 7 8 10 11 12 13 14 15 16 17 18 24 26 28 30 31 40 41 42 43 44 46 47 49 50 51 52 53 54 58 60 62 63 85 172" > dcan_lookup_labels.txt
+
 
 # Initialize the output file
 echo "Summary of label differences:" > output.txt

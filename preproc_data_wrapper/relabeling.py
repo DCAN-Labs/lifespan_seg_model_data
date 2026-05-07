@@ -33,6 +33,7 @@ def correct_corpus_callosum(fdata):
     return fdata
 
 # WM-hypointensities (77) and non-WM-hypointensities (80) need to be remapped based on whatever side of the brain it is on, similar to corpus callosum function above
+# However, if it is from the NS dataset, it may need to be remapped as a lesion (need to take a look at the data though and see first)
 def correct_wm_intensities(fdata):
     # Identify WM intensity voxels in a single pass
     wm_mask = np.isin(fdata, [77, 80])
