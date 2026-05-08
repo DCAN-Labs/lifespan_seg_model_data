@@ -9,9 +9,9 @@
 #SBATCH -t 10:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lundq163@umn.edu
-#SBATCH -p aglarge,agsmall,ag2tb,preempt,amdsmall,amdlarge,amd512,amd2tb
-#SBATCH -o ADNI_output_logs_part2/data_preproc_%A_%a.out
-#SBATCH -e ADNI_output_logs_part2/data_preproc_%A_%a.err
+#SBATCH -p msismall,msilarge
+#SBATCH -o NS_output_logs_part2/data_preproc_%A_%a.out
+#SBATCH -e NS_output_logs_part2/data_preproc_%A_%a.err
 #SBATCH -A csandova
 
 cd run_files_${1}.preproc_data_part2

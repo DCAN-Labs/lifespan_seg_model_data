@@ -3,7 +3,7 @@
 # determine data directory, run folders, and run templates
 dataset=$1
 in_bucket="s3://lifespan-seg-model-data/raw"
-out_bucket="s3://lifespan-seg-model-data/raw"
+out_bucket="s3://lifespan-seg-model-data/raw3"
 data_dir="/tmp"
 run_folder=`pwd`
 

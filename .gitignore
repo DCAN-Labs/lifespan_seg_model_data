@@ -1,4 +1,5 @@
 preproc_data_wrapper/__pycache__/relabeling.cpython-311.pyc
 relabeled.nii.gz
 preproc_data_wrapper/run_files*
+preproc_data_wrapper/*output_logs*
 bibsnet_paper/

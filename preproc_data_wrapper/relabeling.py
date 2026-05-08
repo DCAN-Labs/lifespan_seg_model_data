@@ -6,61 +6,62 @@ import argparse
 import random
 from pathlib import Path
 
+
+def remap_indices_by_hemisphere(fdata, label_indices, left_label, right_label):
+    y_z_pairs = set(zip(label_indices[1], label_indices[2]))
+    y_z_to_mean_x = {}
+
+    for y, z in y_z_pairs:
+        x_values = label_indices[0][np.logical_and(label_indices[1] == y, label_indices[2] == z)]
+        y_z_to_mean_x[(y, z)] = np.mean(x_values)
+
+    for x, y, z in zip(*label_indices):
+        mean_x = int(y_z_to_mean_x[(y, z)])
+        if x == mean_x:
+            new_label = left_label if random.randint(0, 1) == 0 else right_label
+        elif x >= mean_x:
+            new_label = left_label
+        else:
+            new_label = right_label
+        fdata[x, y, z] = new_label
+
+    return fdata
+
 def correct_corpus_callosum(fdata):
     # Identify CC voxels in a single pass
     cc_mask = np.isin(fdata, [251, 252, 253, 254, 255])
     cc_indices = np.where(cc_mask)
-    
-    # Calculate means more efficiently
-    y_z_pairs = set(zip(cc_indices[1], cc_indices[2]))
-    y_z_to_mean_x = {}
-    
-    for y, z in y_z_pairs:
-        x_values = cc_indices[0][np.logical_and(cc_indices[1] == y, cc_indices[2] == z)]
-        y_z_to_mean_x[(y, z)] = np.mean(x_values)
-    
-    # Apply the new labels
-    for x, y, z in zip(*cc_indices):
-        m = int(y_z_to_mean_x[(y, z)])
-        if x == m:
-            new_label = 2 if random.randint(0, 1) == 0 else 41
-        elif x >= m:
-            new_label = 2  # Left cerebral white matter
-        else:
-            new_label = 41  # Right cerebral white matter
-        fdata[x, y, z] = new_label
-    
-    return fdata
 
-# WM-hypointensities (77) and non-WM-hypointensities (80) need to be remapped based on whatever side of the brain it is on, similar to corpus callosum function above
-# However, if it is from the NS dataset, it may need to be remapped as a lesion (need to take a look at the data though and see first)
-def correct_wm_intensities(fdata):
+    return remap_indices_by_hemisphere(fdata, cc_indices, 2, 41)
+
+# WM-hypointensities (77) and non-WM-hypointensities (80) need to be remapped based on whatever side of the brain it is on, similar to corpus callosum function above. We are running this function on fragileX and ADNI datasets, but can argument can be made to use the below function on ADNI, see below function. 
+def correct_wm_intensities_no_lesion(fdata):
     # Identify WM intensity voxels in a single pass
     wm_mask = np.isin(fdata, [77, 80])
     wm_indices = np.where(wm_mask)
 
-    # Calculate means more efficiently
-    y_z_pairs = set(zip(wm_indices[1], wm_indices[2]))
-    y_z_to_mean_x = {}
+    return remap_indices_by_hemisphere(fdata, wm_indices, 2, 41)
 
-    for y, z in y_z_pairs:
-        x_values = wm_indices[0][np.logical_and(wm_indices[1] == y, wm_indices[2] == z)]
-        y_z_to_mean_x[(y, z)] = np.mean(x_values)
+# We run this function on the NS datases. If it is a WM-hypointensity label, it will be remapped as a lesion label (25 for left lesion and 57 for right lesion) instead of a white matter label (2 or 41), as is still done for the non-WM-hypointensity label. This is because WM-hypointensities are more likely to represent lesions in this dataset, while non-WM-hypointensities are more likely to represent normal white matter. This is a heuristic approach and may not be perfect, but it should help to improve the accuracy of the segmentation with lesion data in the future. It is important to validate this approach on a case-by-case basis and adjust as necessary based on the specific characteristics of the data being processed.
+def correct_wm_intensities_with_lesion(fdata):
+    # Identify WM intensity voxels in a single pass
+    wm_hypo_mask = np.isin(fdata, 77)
+    wm_nh_mask = np.isin(fdata, 80)
+    wm_hypo_indices = np.where(wm_hypo_mask)
+    wm_nh_indices = np.where(wm_nh_mask)
 
-    # Apply the new labels
-    for x, y, z in zip(*wm_indices):
-        m = int(y_z_to_mean_x[(y, z)])
-        if x == m:
-            new_label = 2 if random.randint(0, 1) == 0 else 41
-        elif x >= m:
-            new_label = 2  # Left cerebral white matter
-        else:
-            new_label = 41  # Right cerebral white matter
-        fdata[x, y, z] = new_label
+    remap_indices_by_hemisphere(fdata, wm_hypo_indices, 25, 57)
+    remap_indices_by_hemisphere(fdata, wm_nh_indices, 2, 41)
 
     return fdata
 
-def relabel_segmentation(input_file, output_file):
+
+def correct_wm_intensities(fdata, use_lesion_labels=False):
+    if use_lesion_labels:
+        return correct_wm_intensities_with_lesion(fdata)
+    return correct_wm_intensities_no_lesion(fdata)
+
+def relabel_segmentation(input_file, output_file, use_lesion_labels=False):
     # Define the valid labels based on your list
     # valid_labels_extended = {
     #     0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 24, 26, 28, 30, 31,
@@ -80,7 +81,7 @@ def relabel_segmentation(input_file, output_file):
     # First correct corpus callosum
     new_data = correct_corpus_callosum(new_data)
     # Then correct WM intensities
-    new_data = correct_wm_intensities(new_data)
+    new_data = correct_wm_intensities(new_data, use_lesion_labels=use_lesion_labels)
 
     # Get unique labels
     unique_labels = np.unique(new_data).astype(int)
@@ -162,6 +163,11 @@ def main():
     parser = argparse.ArgumentParser(description='Relabel segmentation files to a standardized format')
     parser.add_argument('input', help='Input segmentation file (.mgz or .nii.gz)')
     parser.add_argument('--output', help='Output filename (default: adds "_relabeled" to input filename)')
+    parser.add_argument(
+        '--use-lesion-labels',
+        action='store_true',
+        help='Map WM-hypointensity label 77 to lesion labels 25/57 instead of WM labels 2/41. Use this for datasets such as NS where 77 is treated as lesion-like.',
+    )
     
     args = parser.parse_args()
     
@@ -173,7 +179,7 @@ def main():
         output_file = str(input_path.with_name(f"{input_path.stem}_relabeled{input_path.suffix}"))
     
     # Run the relabeling
-    num_relabeled = relabel_segmentation(args.input, output_file)
+    num_relabeled = relabel_segmentation(args.input, output_file, use_lesion_labels=args.use_lesion_labels)
     print(f"Relabeling complete. Modified {num_relabeled} label types.")
 
 if __name__ == "__main__":
