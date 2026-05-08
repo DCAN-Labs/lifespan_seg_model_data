@@ -152,9 +152,9 @@ def relabel_segmentation(input_file, output_file, use_lesion_labels=False):
         elif label == 29: #  Left-undetermined
             new_label = 0
             print(f"Remapping label (Left-undetermined) {label} → {new_label} (Unused label)")
-        elif label == 1:  # Left-Cerebral-Exterior
+        elif label == 1 or label == 40:  # Left-Cerebral-Exterior or Right-Cerebral-Exterior
             new_label = 0
-            print(f"Remapping label (Left-Cerebral-Exterior) {label} → {new_label} (Unused label)")
+            print(f"Remapping label (Left-Cerebral-Exterior/Right-Cerebral-Exterior) {label} → {new_label} (Unused label)")
         elif label == 5:  # Left-Inf-Lat-Vent
             new_label = 4  # Left-Lateral-Ventricle
             print(f"Remapping label (Left-Inf-Lat-Vent) {label} → {new_label} (Left-Lateral-Ventricle)")
@@ -167,12 +167,9 @@ def relabel_segmentation(input_file, output_file, use_lesion_labels=False):
         elif label == 63:  # Right-choroid-plexus
             new_label = 43  # Right-Lateral-Ventricle
             print(f"Remapping label (Right-choroid-plexus) {label} → {new_label} (Right-Lateral-Ventricle)")
-        elif label == 6 or label == 7:  # Left-Cerebellum-Exterior or Left-Cerebellum-White-Matter
-            new_label = 8  # Left-Cerebellum-Cortex
-            print(f"Remapping label (Left-Cerebellum-Exterior/Left-Cerebellum-White-Matter) {label} → {new_label} (Left-Cerebellum-Cortex)")
-        elif label == 45 or label == 46:  # Right-Cerebellum-Exterior or Right-Cerebellum-White-Matter
-            new_label = 47  # Right-Cerebellum-Cortex
-            print(f"Remapping label (Right-Cerebellum-Exterior/Right-Cerebellum-White-Matter) {label} → {new_label} (Right-Cerebellum-Cortex)")
+        elif label == 6 or label == 45:  # Left-Cerebellum-Exterior or Right-Cerebellum-Exterior
+            new_label = 0
+            print(f"Remapping label (Left-Cerebellum-Exterior/Right-Cerebellum-Exterior) {label} → {new_label} (Unused label)")
         elif label == 30 or label == 62:  # Left-vessel or Right-vessel
             new_label = 0  # Unused label
             print(f"Remapping label (Left-vessel/Right-vessel) {label} → {new_label} (Unused label)")

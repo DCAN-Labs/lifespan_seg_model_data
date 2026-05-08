@@ -19,8 +19,8 @@ INPUT_DIR="$1"
 #current infant maybe
 #echo "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 23 24 25 26 27 28 30 31 40 41 42 43 44 46 47 48 49 50 51 52 53 54 58 59 60 62 63 77 85 172" > dcan_lookup_labels.txt
 
-#lifespan, removed 77 and 80 for now
-echo "0 1 2 3 4 5 6 7 8 10 11 12 13 14 15 16 17 18 24 26 28 30 31 40 41 42 43 44 46 47 49 50 51 52 53 54 58 60 62 63 85 172" > dcan_lookup_labels.txt
+#lifespan, added 25 and 57, but 1, 6, 40, 45, 80
+echo "0 2 3 4 5 7 8 10 11 12 13 14 15 16 17 18 24 25 26 28 30 31 41 42 43 44 46 47 49 50 51 52 53 54 57 58 60 62 63 77 85 172" > dcan_lookup_labels.txt
 
 
 # Initialize the output file
