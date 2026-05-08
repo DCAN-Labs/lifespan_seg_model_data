@@ -76,7 +76,7 @@ fi
 
 if [[ ${dataset} == "ADNI" ]]; then
 	#adjusts the labels in the current label file
-	python ${run_folder}/relabeling.py ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz --output ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz
+	python ${run_folder}/relabeling.py --use-lesion-labels ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz --output ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_ses-${ses_id}.nii.gz
 fi
 
 if [[ ${dataset} == "NS" ]]; then
