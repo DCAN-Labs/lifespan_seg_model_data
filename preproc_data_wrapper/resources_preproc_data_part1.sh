@@ -10,8 +10,8 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lundq163@umn.edu
 #SBATCH -p msismall,msilarge
-#SBATCH -o NS_output_logs_part1/data_preproc_%A_%a.out
-#SBATCH -e NS_output_logs_part1/data_preproc_%A_%a.err
+#SBATCH -o ADNI_output_logs_part1/data_preproc_%A_%a.out
+#SBATCH -e ADNI_output_logs_part1/data_preproc_%A_%a.err
 #SBATCH -A csandova
 
 cd run_files_${1}.preproc_data_part1

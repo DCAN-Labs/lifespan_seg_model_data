@@ -3,63 +3,103 @@
 import nibabel as nib
 import numpy as np
 import argparse
-import random
 from pathlib import Path
 
 
-def remap_indices_by_hemisphere(fdata, label_indices, left_label, right_label):
-    y_z_pairs = set(zip(label_indices[1], label_indices[2]))
-    y_z_to_mean_x = {}
+def remap_indices_by_hemisphere(fdata, label_indices, affine, left_label, right_label, midline_tol_mm=0.5):
+    # Fast exit when the source label is absent.
+    if label_indices[0].size == 0:
+        return fdata
 
-    for y, z in y_z_pairs:
-        x_values = label_indices[0][np.logical_and(label_indices[1] == y, label_indices[2] == z)]
-        y_z_to_mean_x[(y, z)] = np.mean(x_values)
+    # Build homogeneous voxel coordinates [i, j, k, 1] for all voxels to remap.
+    ijk = np.vstack(
+        (
+            label_indices[0],
+            label_indices[1],
+            label_indices[2],
+            np.ones(label_indices[0].shape[0], dtype=np.float64),
+        )
+    )
+    # Convert to world-space x (RAS+) using the affine first row.
+    # In RAS space: x < 0 is anatomical left, x > 0 is anatomical right.
+    world_x = affine[0, :] @ ijk
 
-    for x, y, z in zip(*label_indices):
-        mean_x = int(y_z_to_mean_x[(y, z)])
-        if x == mean_x:
-            new_label = left_label if random.randint(0, 1) == 0 else right_label
-        elif x >= mean_x:
-            new_label = left_label
+    # Treat a small band around x=0 as midline to avoid unstable flips from tiny
+    # interpolation/rounding differences at the interhemispheric boundary.
+    left_mask = world_x < -midline_tol_mm
+    right_mask = world_x > midline_tol_mm
+    midline_mask = ~(left_mask | right_mask)
+
+    fdata[
+        label_indices[0][left_mask],
+        label_indices[1][left_mask],
+        label_indices[2][left_mask],
+    ] = left_label
+    fdata[
+        label_indices[0][right_mask],
+        label_indices[1][right_mask],
+        label_indices[2][right_mask],
+    ] = right_label
+
+    if np.any(midline_mask):
+        # Deterministic fallback for true midline voxels:
+        # 1) identify which voxel axis best maps to world-space left-right,
+        # 2) split by that axis relative to the volume center.
+        lr_axis = int(np.argmax(np.abs(affine[0, :3])))
+        lr_axis_sign = np.sign(affine[0, lr_axis])
+        if lr_axis_sign == 0:
+            lr_axis_sign = 1.0
+
+        lr_vox = label_indices[lr_axis][midline_mask]
+        center = (fdata.shape[lr_axis] - 1) / 2.0
+        # Positive sign means larger voxel index is more right in world space.
+        # Negative sign means larger voxel index is more left.
+        if lr_axis_sign > 0:
+            is_right = lr_vox >= center
         else:
-            new_label = right_label
-        fdata[x, y, z] = new_label
+            is_right = lr_vox <= center
+
+        mid_i = label_indices[0][midline_mask]
+        mid_j = label_indices[1][midline_mask]
+        mid_k = label_indices[2][midline_mask]
+        fdata[mid_i[~is_right], mid_j[~is_right], mid_k[~is_right]] = left_label
+        fdata[mid_i[is_right], mid_j[is_right], mid_k[is_right]] = right_label
 
     return fdata
 
-def correct_corpus_callosum(fdata):
+def correct_corpus_callosum(fdata, affine):
     # Identify CC voxels in a single pass
     cc_mask = np.isin(fdata, [251, 252, 253, 254, 255])
     cc_indices = np.where(cc_mask)
 
-    return remap_indices_by_hemisphere(fdata, cc_indices, 2, 41)
+    return remap_indices_by_hemisphere(fdata, cc_indices, affine, 2, 41)
 
-# WM-hypointensities (77) and non-WM-hypointensities (80) need to be remapped based on whatever side of the brain it is on, similar to corpus callosum function above. We are running this function on fragileX and ADNI datasets, but can argument can be made to use the below function on ADNI, see below function. 
-def correct_wm_intensities_no_lesion(fdata):
+# WM-hypointensities (77) and non-WM-hypointensities (80) need to be remapped based on whatever side of the brain it is on, similar to corpus callosum function above. We are running this function on fragileX dataset. 
+def correct_wm_intensities_no_lesion(fdata, affine):
     # Identify WM intensity voxels in a single pass
     wm_mask = np.isin(fdata, [77, 80])
     wm_indices = np.where(wm_mask)
 
-    return remap_indices_by_hemisphere(fdata, wm_indices, 2, 41)
+    return remap_indices_by_hemisphere(fdata, wm_indices, affine, 2, 41)
 
-# We run this function on the NS datases. If it is a WM-hypointensity label, it will be remapped as a lesion label (25 for left lesion and 57 for right lesion) instead of a white matter label (2 or 41), as is still done for the non-WM-hypointensity label. This is because WM-hypointensities are more likely to represent lesions in this dataset, while non-WM-hypointensities are more likely to represent normal white matter. This is a heuristic approach and may not be perfect, but it should help to improve the accuracy of the segmentation with lesion data in the future. It is important to validate this approach on a case-by-case basis and adjust as necessary based on the specific characteristics of the data being processed.
-def correct_wm_intensities_with_lesion(fdata):
+# We run this function on the NS and ADNI datases. If it is a WM-hypointensity label, it will be remapped as a lesion label (25 for left lesion and 57 for right lesion) instead of a white matter label (2 or 41), as is still done for the non-WM-hypointensity label. This is because WM-hypointensities are more likely to represent lesions in this dataset, while non-WM-hypointensities are more likely to represent normal white matter. This is a heuristic approach and may not be perfect, but it should help to improve the accuracy of the segmentation with lesion data in the future. It is important to validate this approach on a case-by-case basis and adjust as necessary based on the specific characteristics of the data being processed. Argument can be made to only run this on NS and run above on ADNI. 
+def correct_wm_intensities_with_lesion(fdata, affine):
     # Identify WM intensity voxels in a single pass
     wm_hypo_mask = np.isin(fdata, 77)
     wm_nh_mask = np.isin(fdata, 80)
     wm_hypo_indices = np.where(wm_hypo_mask)
     wm_nh_indices = np.where(wm_nh_mask)
 
-    remap_indices_by_hemisphere(fdata, wm_hypo_indices, 25, 57)
-    remap_indices_by_hemisphere(fdata, wm_nh_indices, 2, 41)
+    remap_indices_by_hemisphere(fdata, wm_hypo_indices, affine, 25, 57)
+    remap_indices_by_hemisphere(fdata, wm_nh_indices, affine, 2, 41)
 
     return fdata
 
 
-def correct_wm_intensities(fdata, use_lesion_labels=False):
+def correct_wm_intensities(fdata, affine, use_lesion_labels=False):
     if use_lesion_labels:
-        return correct_wm_intensities_with_lesion(fdata)
-    return correct_wm_intensities_no_lesion(fdata)
+        return correct_wm_intensities_with_lesion(fdata, affine)
+    return correct_wm_intensities_no_lesion(fdata, affine)
 
 def relabel_segmentation(input_file, output_file, use_lesion_labels=False):
     # Define the valid labels based on your list
@@ -79,9 +119,9 @@ def relabel_segmentation(input_file, output_file, use_lesion_labels=False):
     new_data = data.copy()
 
     # First correct corpus callosum
-    new_data = correct_corpus_callosum(new_data)
+    new_data = correct_corpus_callosum(new_data, img.affine)
     # Then correct WM intensities
-    new_data = correct_wm_intensities(new_data, use_lesion_labels=use_lesion_labels)
+    new_data = correct_wm_intensities(new_data, img.affine, use_lesion_labels=use_lesion_labels)
 
     # Get unique labels
     unique_labels = np.unique(new_data).astype(int)

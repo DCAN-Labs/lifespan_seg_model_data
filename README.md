@@ -1,7 +1,7 @@
 # How to run the internal preprocessing for the data used in the lifespan segmentation model
 ## Notes before starting
 - Only set up for T1_only model training at the moment
-- For now, curated specifically for the ADNI and fragileX datasets (NS in progress -> 5-7-2026)
+- For now, curated specifically for the ADNI dataset (NS in progress, fragileX has FOV issue -> 5-7-2026)
 - The wrapper is split into two separate parts because the MSI modules for freesurfer and ants have conflicts
 ## Step 1a - Rename any files if necessary
 T1w image files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext}` while the corresponding label files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext}` before feeding them in to the preprocessing wrapper. In order to get files into this format, we need to run the `rename_data_files.py` script on a BIDS valid input directory. A specific file is used below as an example when filling in the arguments to the script, but this script can work on all files within a set of subjects as long as a `participants.tsv` is utilized.

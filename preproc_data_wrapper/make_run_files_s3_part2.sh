@@ -2,8 +2,8 @@
 
 # determine data directory, run folders, and run templates
 dataset=$1
-in_bucket="s3://lifespan-seg-model-data/raw3"
-out_bucket="s3://lifespan-seg-model-data/preprocessed3/T1-only"
+in_bucket="s3://lifespan-seg-model-data/raw_relabeled"
+out_bucket="s3://lifespan-seg-model-data/preprocessed/T1-only"
 data_dir="/tmp"
 run_folder=`pwd`
 

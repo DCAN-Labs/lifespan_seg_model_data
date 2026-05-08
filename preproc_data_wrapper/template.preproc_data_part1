@@ -26,7 +26,7 @@ module load freesurfer
 module load fsl
 source /projects/standard/faird/shared/code/external/envs/miniconda3/load_miniconda3.sh
 
-if [[ ${dataset} == "fragileX"]]; then
+if [[ ${dataset} == "fragileX" ]]; then
 	if [[ ${images_ext} == "mgz" ]]; then
 		#converts the image file to .nii.gz format using mri_convert
 		mri_convert ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext} ${data_dir}/raw/${dataset}/sub-${sub_id}/${age}mo/${age}mo_ds-${dataset}_sub-${sub_id}_0000.nii.gz
