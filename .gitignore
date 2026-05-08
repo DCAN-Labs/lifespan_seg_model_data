@@ -3,3 +3,4 @@ relabeled.nii.gz
 preproc_data_wrapper/run_files*
 preproc_data_wrapper/*output_logs*
 bibsnet_paper/
+label_checks/
