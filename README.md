@@ -1,12 +1,13 @@
-# How to run the internal preprocessing for the data used in the lifespan segmentation model
+# How to run the internal preprocessing for the data used in the DCAN segmentation models
 ## Notes before starting
-- Only set up for T1_only model training at the moment
-- For now, curated specifically for the ADNI dataset (NS in progress, fragileX has FOV issue -> 5-7-2026)
-- The wrapper is split into two separate parts because the MSI modules for freesurfer and ants have conflicts
+- For Lifespan model: Only set up for T1_only model training at the moment
+- For Lifespan model: For now, curated specifically for the ADNI dataset (NS in progress, fragileX has FOV issue -> 5-7-2026)
+- For Lifespan model: The wrapper is split into two separate parts because the MSI modules for freesurfer and ants have conflicts
+- For infant models: only Step 1a is necessary as input data files still need to be named properly. Make sure to check that your data doesn't already exist in the right format. 
 ## Step 1a - Rename any files if necessary
-T1w image files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext}` while the corresponding label files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext}` before feeding them in to the preprocessing wrapper. In order to get files into this format, we need to run the `rename_data_files.py` script on a BIDS valid input directory. A specific file is used below as an example when filling in the arguments to the script, but this script can work on all files within a set of subjects as long as a `participants.tsv` is utilized.
+T1w image files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}_0000.${images_ext}` (or 0001 for T2w image files) while the corresponding label files need to be in the format `${age}mo_ds-${dataset}_sub-${sub_id}.${labels_ext}` before feeding them in to the preprocessing wrapper. In order to get files into this format, we need to run the `rename_data_files.py` script on a BIDS valid input directory. A specific file is used below as an example when filling in the arguments to the script, but this script can work on all files within a set of subjects as long as a `participants.tsv` is utilized.
 
-NOTE: this step may not be necessary as the renamed data may already exist on the s3 bucket under s3://lifespan-seg-model-data/{images/labels}_{dataset}_renamed. If that is the case then skip to Step 1b.
+NOTE: this step may not be necessary as the renamed data may already exist in /projects/standard/feczk001/shared/data/lifespan-seg-model-data/{images/labels}_{dataset}_renamed. If that is the case then skip to Step 1b.
 
 Information on the file name fields:
 - `${age}` -> Integer value for the participant age in months. This information can be located in the participants.tsv for a given dataset, assuming it is BIDS valid. 
@@ -30,6 +31,11 @@ sub-1234    ses-1234    12
 - `<t1_identifier>` is as string that is used to identify which file is the actual anatomical image that needs renaming. Based on the example above, the input to this argument would be the string "T1w.mgz"
 - `<aseg_identifier>` is an input similar to the argument above, but instead distinguishes the segmentation file in particular from the other files in the directory. An example would be something like "aseg.mgz"
 - `<output_directory>` would be the absolute path to where the renamed files will get produced. For our example, the input to this argument would be `/usr/projects/bids_dataset_renamed`, and after running the script, the full path of the renamed file will result in `/usr/projects/bids_dataset_renamed/images_test_renamed/144mo_ds-test_sub-1234_ses-1234_0000.mgz`
+
+***If running only an infant specific model, combine any newly renamed data with any data from these locations into the training directories:***
+
+- `/projects/standard/feczk001/shared/data/lifespan-seg-model-data/anomalous_infant_data/`
+- `/projects/standard/feczk001/shared/data/nnunet-hbcd/`
 
 ## Step 1b - Running part 1 of data preprocessing
 Part 1 of data preprocessing includes converting anatomical images and label files to `.nii.gz` if needed, reorienting and overwriting the image and label file, then relabeling the segmentations using `./preproc_data_wrapper/relabeling.py`. Note that these preprocessing steps are currently only catered for the ADNI and fragileX datasets (NS in progress -> 5-7-2026). 
